@@ -40,6 +40,44 @@ describe("Comments API", function () {
         expect(response.body.comments).to.be.an("array").that.has.length(1);
       });
     });
+
+    it("errors when no authentication token provided", function () {
+      cy.task("db:seed");
+      cy.database("find", "comments").then((comment: Comment) => {
+        const transactionId = comment.transactionId;
+        cy.request({
+          method: "GET",
+          url: `${apiComments}/${transactionId}`,
+          failOnStatusCode: false,
+        }).then((response) => {
+          expect(response.status).to.eq(401);
+          expect(response.body.error).to.eq("Unauthorized");
+        });
+      });
+    });
+
+    it("errors when invalid transaction ID provided", function () {
+      cy.request({
+        method: "GET",
+        url: `${apiComments}/invalid-id-1234`,
+        failOnStatusCode: false,
+      }).then((response) => {
+        expect(response.status).to.eq(422);
+        expect(response.body.errors).to.be.an("array").that.has.length(1);
+      });
+    });
+
+    it("handles non-existent transaction ID", function () {
+      const nonExistentId = "B1NXPyEpO";
+      cy.request({
+        method: "GET",
+        url: `${apiComments}/${nonExistentId}`,
+        failOnStatusCode: false,
+      }).then((response) => {
+        expect(response.status).to.eq(200);
+        expect(response.body.comments).to.be.an("array").that.has.length(0);
+      });
+    });
   });
 
   context("POST /comments/:transactionId", function () {
@@ -47,6 +85,81 @@ describe("Comments API", function () {
       const transactionId = ctx.transactionId!;
       cy.request("POST", `${apiComments}/${transactionId}`, {
         content: "This is my comment",
+      }).then((response) => {
+        expect(response.status).to.eq(200);
+      });
+    });
+
+    it("errors when no authentication token provided", function () {
+      cy.task("db:seed");
+      cy.database("find", "comments").then((comment: Comment) => {
+        const transactionId = comment.transactionId;
+        cy.request({
+          method: "POST",
+          url: `${apiComments}/${transactionId}`,
+          failOnStatusCode: false,
+          body: {
+            content: "This is my comment",
+          },
+        }).then((response) => {
+          expect(response.status).to.eq(401);
+          expect(response.body.error).to.eq("Unauthorized");
+        });
+      });
+    });
+
+    it("errors when invalid transaction ID provided", function () {
+      const transactionId = "invalid-id-1234";
+      cy.request({
+        method: "POST",
+        url: `${apiComments}/${transactionId}`,
+        failOnStatusCode: false,
+        body: {
+          content: "This is my comment",
+        },
+      }).then((response) => {
+        expect(response.status).to.eq(422);
+        expect(response.body.errors).to.be.an("array").that.has.length(1);
+      });
+    });
+
+    it("errors when missing comment content", function () {
+      const transactionId = ctx.transactionId!;
+      cy.request({
+        method: "POST",
+        url: `${apiComments}/${transactionId}`,
+        failOnStatusCode: false,
+        body: {},
+      }).then((response) => {
+        expect(response.status).to.eq(422);
+        expect(response.body.errors).to.be.an("array").that.has.length(1);
+      });
+    });
+
+    it("errors when invalid comment content type", function () {
+      const transactionId = ctx.transactionId!;
+      cy.request({
+        method: "POST",
+        url: `${apiComments}/${transactionId}`,
+        failOnStatusCode: false,
+        body: {
+          content: 123,
+        },
+      }).then((response) => {
+        expect(response.status).to.eq(422);
+        expect(response.body.errors).to.be.an("array").that.has.length(1);
+      });
+    });
+
+    it("handles POST to non-existent transaction ID", function () {
+      const nonExistentId = "B1NXPyEpO";
+      cy.request({
+        method: "POST",
+        url: `${apiComments}/${nonExistentId}`,
+        failOnStatusCode: false,
+        body: {
+          content: "This is my comment",
+        },
       }).then((response) => {
         expect(response.status).to.eq(200);
       });
