@@ -2,7 +2,7 @@ import React, { useCallback, useRef } from "react";
 import { styled } from "@mui/material/styles";
 import { get } from "lodash/fp";
 import { useTheme, useMediaQuery, Divider } from "@mui/material";
-import { FixedSizeList, ListChildComponentProps } from "react-window";
+import { List, RowComponentProps } from "react-window";
 
 import TransactionItem from "./TransactionItem";
 import { TransactionResponseItem, TransactionPagination } from "../models";
@@ -29,6 +29,25 @@ export interface TransactionListProps {
   pagination: TransactionPagination;
 }
 
+interface RowExtraProps {
+  transactions: TransactionResponseItem[];
+  isMobile: boolean;
+}
+
+const Row = ({ index, style, transactions, isMobile }: RowComponentProps<RowExtraProps>) => {
+  const transaction = get(index, transactions);
+
+  if (index < transactions.length) {
+    return (
+      <div style={style}>
+        <TransactionItem transaction={transaction} />
+        <Divider variant={isMobile ? "fullWidth" : "inset"} />
+      </div>
+    );
+  }
+  return null;
+};
+
 const TransactionInfiniteList: React.FC<TransactionListProps> = ({
   transactions,
   loadNextPage,
@@ -44,14 +63,16 @@ const TransactionInfiniteList: React.FC<TransactionListProps> = ({
   const removePx = (str: string) => +str.slice(0, str.length - 2);
 
   const listHeight = isXsBreakpoint ? removePx(theme.spacing(74)) : removePx(theme.spacing(88));
-  const listWidth = isXsBreakpoint ? removePx(theme.spacing(38)) : removePx(theme.spacing(90));
   const itemSize = isXsBreakpoint ? removePx(theme.spacing(28)) : removePx(theme.spacing(16));
 
-  const handleItemsRendered = useCallback(
-    ({ visibleStopIndex }: { visibleStopIndex: number }) => {
+  const handleRowsRendered = useCallback(
+    (
+      visibleRows: { startIndex: number; stopIndex: number },
+      _allRows: { startIndex: number; stopIndex: number }
+    ) => {
       if (
         pagination.hasNextPages &&
-        visibleStopIndex >= transactions.length - 1 &&
+        visibleRows.stopIndex >= transactions.length - 1 &&
         !loadingRef.current
       ) {
         loadingRef.current = true;
@@ -63,31 +84,16 @@ const TransactionInfiniteList: React.FC<TransactionListProps> = ({
     [pagination.hasNextPages, pagination.page, transactions.length, loadNextPage]
   );
 
-  const Row = ({ index, style }: ListChildComponentProps) => {
-    const transaction = get(index, transactions);
-
-    if (index < transactions.length) {
-      return (
-        <div style={style}>
-          <TransactionItem transaction={transaction} />
-          <Divider variant={isMobile ? "fullWidth" : "inset"} />
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <StyledDiv data-test="transaction-list" className={classes.transactionList}>
-      <FixedSizeList
-        height={listHeight}
-        width={listWidth}
-        itemCount={itemCount}
-        itemSize={itemSize}
-        onItemsRendered={handleItemsRendered}
-      >
-        {Row}
-      </FixedSizeList>
+      <List
+        style={{ height: listHeight }}
+        rowComponent={Row}
+        rowCount={itemCount}
+        rowHeight={itemSize}
+        rowProps={{ transactions, isMobile }}
+        onRowsRendered={handleRowsRendered}
+      />
     </StyledDiv>
   );
 };
