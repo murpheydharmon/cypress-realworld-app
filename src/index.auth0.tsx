@@ -1,30 +1,20 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
-import { Router } from "react-router-dom";
-import {
-  createTheme,
-  ThemeProvider,
-  Theme,
-  StyledEngineProvider,
-  adaptV4Theme,
-} from "@mui/material";
+import { BrowserRouter } from "react-router-dom";
+import { createTheme, ThemeProvider, StyledEngineProvider } from "@mui/material";
 import { Auth0Provider } from "@auth0/auth0-react";
 import AppAuth0 from "./containers/AppAuth0";
-import { history } from "./utils/historyUtils";
 
-const theme = createTheme(
-  adaptV4Theme({
-    palette: {
-      secondary: {
-        main: "#fff",
-      },
+const theme = createTheme({
+  palette: {
+    secondary: {
+      main: "#fff",
     },
-  })
-);
+  },
+});
 
 /* istanbul ignore next */
 const onRedirectCallback = (appState: any) => {
-  history.replace((appState && appState.returnTo) || window.location.pathname);
+  window.history.replaceState({}, "", (appState && appState.returnTo) || window.location.pathname);
 };
 
 const root = createRoot(document.getElementById("root")!);
@@ -41,13 +31,13 @@ if (process.env.VITE_AUTH0) {
       onRedirectCallback={onRedirectCallback}
       cacheLocation="localstorage"
     >
-      <Router history={history}>
+      <BrowserRouter>
         <StyledEngineProvider injectFirst>
           <ThemeProvider theme={theme}>
             <AppAuth0 />
           </ThemeProvider>
         </StyledEngineProvider>
-      </Router>
+      </BrowserRouter>
     </Auth0Provider>
   );
 } else {

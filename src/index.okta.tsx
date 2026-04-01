@@ -1,29 +1,19 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
-import { Router, withRouter } from "react-router-dom";
-import {
-  createTheme,
-  ThemeProvider,
-  Theme,
-  StyledEngineProvider,
-  adaptV4Theme,
-} from "@mui/material";
+import { BrowserRouter, useNavigate } from "react-router-dom";
+import { createTheme, ThemeProvider, StyledEngineProvider } from "@mui/material";
 
 // @ts-ignore
 import { OktaAuth, toRelativeUrl } from "@okta/okta-auth-js";
 import { Security } from "@okta/okta-react";
-import { history } from "./utils/historyUtils";
 import AppOkta from "./containers/AppOkta";
 
-const theme = createTheme(
-  adaptV4Theme({
-    palette: {
-      secondary: {
-        main: "#fff",
-      },
+const theme = createTheme({
+  palette: {
+    secondary: {
+      main: "#fff",
     },
-  })
-);
+  },
+});
 
 const root = createRoot(document.getElementById("root")!);
 
@@ -34,26 +24,27 @@ if (process.env.VITE_OKTA) {
     redirectUri: window.location.origin + "/implicit/callback",
   });
 
-  const AppWithRouter = withRouter(({ history }) => {
-    const restoreOriginalUri = (_oktaAuth, originalUri) =>
-      history.replace(toRelativeUrl(originalUri || "/", window.location.origin));
+  const AppWithSecurity = () => {
+    const navigate = useNavigate();
+    const restoreOriginalUri = (_oktaAuth: any, originalUri: string) =>
+      navigate(toRelativeUrl(originalUri || "/", window.location.origin), { replace: true });
 
     return (
       <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri}>
         <AppOkta />
       </Security>
     );
-  });
+  };
 
   /* istanbul ignore next */
   root.render(
-    <Router history={history}>
+    <BrowserRouter>
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
-          <AppWithRouter />
+          <AppWithSecurity />
         </ThemeProvider>
       </StyledEngineProvider>
-    </Router>
+    </BrowserRouter>
   );
 } else {
   console.error("Okta is not configured.");
