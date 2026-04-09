@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useActor, useMachine } from "@xstate/react";
 import { CssBaseline } from "@mui/material";
 
@@ -40,10 +40,19 @@ const App: React.FC = () => {
 
   const [, , bankAccountsService] = useMachine(bankAccountsMachine);
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const isLoggedIn =
     authState.matches("authorized") ||
     authState.matches("refreshing") ||
     authState.matches("updating");
+
+  useEffect(() => {
+    if (isLoggedIn && location.pathname === "/signin") {
+      navigate("/");
+    }
+  }, [isLoggedIn, location.pathname, navigate]);
 
   return (
     <Root className={classes.root}>
@@ -59,21 +68,11 @@ const App: React.FC = () => {
         />
       )}
       {authState.matches("unauthorized") && (
-        <Switch>
-          <Route exact path="/signup">
-            <SignUpForm authService={authService} />
-          </Route>
-          <Route exact path="/signin">
-            <SignInForm authService={authService} />
-          </Route>
-          <Route path="/*">
-            <Redirect
-              to={{
-                pathname: "/signin",
-              }}
-            />
-          </Route>
-        </Switch>
+        <Routes>
+          <Route path="/signup" element={<SignUpForm authService={authService} />} />
+          <Route path="/signin" element={<SignInForm authService={authService} />} />
+          <Route path="*" element={<Navigate to="/signin" replace />} />
+        </Routes>
       )}
       <AlertBar snackbarService={snackbarService} />
     </Root>
