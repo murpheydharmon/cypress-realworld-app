@@ -156,7 +156,6 @@ export const authMachine = Machine<AuthMachineContext, AuthMachineSchema, AuthMa
         return await httpClient
           .post(`http://localhost:${backendPort}/login`, event)
           .then(({ data }) => {
-            window.location.pathname = "/";
             return data;
           })
           .catch((error) => {
@@ -237,11 +236,8 @@ export const authMachine = Machine<AuthMachineContext, AuthMachineSchema, AuthMa
       },
     },
     actions: {
-      redirectHomeAfterLogin: async (ctx, event) => {
-        if (window.location.pathname === "/signin") {
-          /* istanbul ignore next */
-          window.location.pathname = "/";
-        }
+      redirectHomeAfterLogin: () => {
+        // Navigation is handled reactively by the App component
       },
       resetUser: assign((ctx: any, event: any) => ({
         user: undefined,
